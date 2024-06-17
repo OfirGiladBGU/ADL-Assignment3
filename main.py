@@ -5,6 +5,8 @@ import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from sklearn.manifold import TSNE
+import random
 
 
 # Fully connected neural network
@@ -22,12 +24,14 @@ class NeuralNet(nn.Module):
         return out
 
 
-def task1():
+def task1(manual_seed=0):
+    torch.manual_seed(manual_seed)
+
     # Hyperparameters
     input_size = 784
     hidden_size = 500
     num_classes = 10
-    num_epochs = 5
+    num_epochs = 1
     batch_size = 100
     learning_rate = 0.001
 
@@ -109,6 +113,7 @@ def task1():
                       .format(epoch + 1, num_epochs,  mean_loss))
 
     # Test error after training
+    running_loss = 0.0
     misclassified_images = torch.Tensor()
     misclassified_pred_labels = torch.Tensor()
     misclassified_true_labels = torch.Tensor()
@@ -119,7 +124,11 @@ def task1():
             original_images = images
             images = images.reshape(-1, input_size).to(device)
             labels = labels.to(device)
+
             outputs = model(images)
+            loss = criterion(outputs, labels)
+            running_loss += loss.item()
+
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -133,7 +142,10 @@ def task1():
         accuracy = 100 * correct / total
         print('Accuracy of the network on the {} test images: {} %'.format(test_size, accuracy))
 
-    # Plot the error graph
+    final_test_mean_loss = running_loss / test_size
+    print('Final Test Mean Loss Error: {:.4f}'.format(num_epochs, final_test_mean_loss))
+
+    # Plot the Error graph
     plt.xlabel('Epoch')
     plt.ylabel('Dataset Error')
     plt.title('Task 1: Train and test error graphs')
@@ -142,17 +154,38 @@ def task1():
     plt.legend()
     plt.show()
 
-    # Misclassified images
+    # Plot the Misclassified images
     fig, axs = plt.subplots(2, 5)
     for ii in range(2):
         for jj in range(5):
             idx = 5 * ii + jj
             axs[ii, jj].imshow(misclassified_images[idx].squeeze())
-            title = 'Pred: {}\nTrue: {}'.format(misclassified_pred_labels[idx].item(),
-                                                misclassified_true_labels[idx].item())
+            title = (
+                'Pred: {}\n'
+                'True: {}'
+                .format(misclassified_pred_labels[idx].item(), misclassified_true_labels[idx].item())
+            )
             axs[ii, jj].set_title(title)
             axs[ii, jj].axis('off')
     plt.show()
+
+    return final_test_mean_loss
+
+
+def task2():
+    manual_seed_list = random.sample(population=range(0, 100), k=5)
+    test_errors = list()
+    for manual_seed in manual_seed_list:
+        test_error = task1(manual_seed=manual_seed)
+        test_errors.append(test_error)
+
+    mean_test_error = np.mean(test_errors)
+    std_test_error = np.std(test_errors)
+    print(
+        'Mean Test Error: {:.4f}\n'
+        'Standard Deviation of Test Error: {:.4f}'
+        .format(mean_test_error, std_test_error)
+    )
 
 
 if __name__ == '__main__':
@@ -160,3 +193,4 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     task1()
+    task2()
