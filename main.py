@@ -5,7 +5,6 @@ import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import random
-from sklearn.model_selection import train_test_split
 from sklearn.manifold import TSNE
 
 
@@ -77,12 +76,16 @@ class Trainer:
                                                            batch_size=self.batch_size,
                                                            shuffle=False)
         else:
-            # TODO: split to train and valid
+            train_dataset, valid_dataset = torch.utils.data.random_split(
+                train_dataset,
+                [len(test_dataset) - self.valid_size, self.valid_size]
+            )
+
             self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                             batch_size=self.batch_size,
                                                             shuffle=True)
 
-            self.valid_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+            self.valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset,
                                                             batch_size=self.batch_size,
                                                             shuffle=True)
 
@@ -201,12 +204,20 @@ class Trainer:
         final_test_mean_loss = running_loss / test_size
         print('Final Test Mean Loss Error: {:.4f}'.format(final_test_mean_loss))
 
+        if self.valid_mode_active:
+            min_valid_mean_loss = min(valid_error)
+            print('Minimum Valid Mean Loss Error: {:.4f}'.format(min_valid_mean_loss))
+        else:
+            min_valid_mean_loss = None
+
         # Plot the Error graph
         plt.xlabel('Epoch')
         plt.ylabel('Dataset Error')
         plt.title(f'{self.task_name}: Train and test error graphs')
         plt.plot(train_error, label='Train Error')
         plt.plot(test_error, label='Test Error')
+        if self.valid_mode_active:
+            plt.plot(valid_error, label='Valid Error')
         plt.legend()
         plt.show()
 
@@ -225,10 +236,15 @@ class Trainer:
                 axs[ii, jj].axis('off')
         plt.show()
 
-        return final_test_mean_loss
+        if not self.valid_mode_active:
+            return final_test_mean_loss
+        else:
+            return final_test_mean_loss, min_valid_mean_loss
 
 
 def task1():
+    task_name = "Task 1"
+
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
@@ -241,12 +257,14 @@ def task1():
     }
 
     # Train model
-    trainer = Trainer(hyperparameters=hyperparameters, task_name="Task 1")
+    trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name)
     final_test_mean_loss = trainer.train_model()
     return final_test_mean_loss
 
 
 def task2():
+    task_name = "Task 2"
+
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
@@ -262,7 +280,7 @@ def task2():
     test_errors = list()
     for seed in seed_list:
         hyperparameters["seed"] = seed
-        trainer = Trainer(hyperparameters=hyperparameters, task_name="Task 2")
+        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name)
         test_error = trainer.train_model()
         test_errors.append(test_error)
 
@@ -276,7 +294,45 @@ def task2():
 
 
 def task3():
-    pass
+    task_name = "Task 3"
+    valid_size = 10000
+
+    # Hyperparameters
+    hyperparameters = {
+        "seed": 0,
+        "input_size": 784,
+        "hidden_size": 500,
+        "num_classes": 10,
+        "num_epochs": 5,
+        "batch_size": 100,
+        "learning_rate": 0.001
+    }
+
+    seed_list = random.sample(population=range(0, 100), k=5)
+    test_errors = list()
+    valid_errors = list()
+    for seed in seed_list:
+        hyperparameters["seed"] = seed
+        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name, valid_size=valid_size)
+        test_error, valid_error = trainer.train_model()
+        test_errors.append(test_error)
+        valid_errors.append(valid_error)
+
+    mean_test_error = np.mean(test_errors)
+    std_test_error = np.std(test_errors)
+    print(
+        'Mean Test Error: {:.4f}\n'
+        'Standard Deviation of Test Error: {:.4f}'
+        .format(mean_test_error, std_test_error)
+    )
+
+    mean_valid_error = np.mean(valid_errors)
+    std_valid_error = np.std(valid_errors)
+    print(
+        'Mean Valid Error: {:.4f}\n'
+        'Standard Deviation of Valid Error: {:.4f}'
+        .format(mean_valid_error, std_valid_error)
+    )
 
 
 if __name__ == '__main__':
@@ -285,3 +341,4 @@ if __name__ == '__main__':
 
     task1()
     # task2()
+    # task3()
