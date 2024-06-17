@@ -25,8 +25,9 @@ class NeuralNet(nn.Module):
 
 
 class Trainer:
-    def __init__(self, hyperparameters, dataloaders):
+    def __init__(self, hyperparameters, task_name, valid_size=0):
         # Hyperparameters parse
+        self.seed = hyperparameters['seed']
         self.input_size = hyperparameters['input_size']
         self.hidden_size = hyperparameters['hidden_size']
         self.num_classes = hyperparameters['num_classes']
@@ -34,20 +35,60 @@ class Trainer:
         self.batch_size = hyperparameters['batch_size']
         self.learning_rate = hyperparameters['learning_rate']
 
+        # Auxiliaries parse
+        self.task_name = task_name
+        self.valid_size = valid_size
+        if self.valid_size > 0:
+            self.valid_mode_active = True
+        else:
+            self.valid_mode_active = False
+
         # Model
         self.model = NeuralNet(self.input_size, self.hidden_size, self.num_classes).to(device)
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
         # Dataloaders parse
-        self.train_loader = dataloaders.get('train', None)
-        self.valid_loader = dataloaders.get('valid', None)
-        self.test_loader = dataloaders.get('test', None)
+        self.train_loader = None
+        self.valid_loader = None
+        self.test_loader = None
+        self._prepare_dataloaders()
 
-        if self.valid_loader is not None:
-            self.valid_mode_active = True
+    def _prepare_dataloaders(self):
+        torch.manual_seed(self.seed)
+
+        # MNIST dataset
+        train_dataset = torchvision.datasets.MNIST(root='./data/',
+                                                   train=True,
+                                                   transform=transforms.ToTensor(),
+                                                   download=True)
+
+        test_dataset = torchvision.datasets.MNIST(root='./data/',
+                                                  train=False,
+                                                  transform=transforms.ToTensor())
+
+        # Data loader
+        if self.valid_size == 0:
+            self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                                            batch_size=self.batch_size,
+                                                            shuffle=True)
+
+            self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                                           batch_size=self.batch_size,
+                                                           shuffle=False)
         else:
-            self.valid_mode_active = False
+            # TODO: split to train and valid
+            self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                                            batch_size=self.batch_size,
+                                                            shuffle=True)
+
+            self.valid_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                                            batch_size=self.batch_size,
+                                                            shuffle=True)
+
+            self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                                           batch_size=self.batch_size,
+                                                           shuffle=False)
 
     def train_model(self):
         train_size = len(self.train_loader.dataset)
@@ -131,6 +172,7 @@ class Trainer:
         misclassified_images = torch.Tensor()
         misclassified_pred_labels = torch.Tensor()
         misclassified_true_labels = torch.Tensor()
+        self.model.eval()
         with torch.no_grad():
             correct = 0
             total = 0
@@ -157,12 +199,12 @@ class Trainer:
             print('Accuracy of the network on the {} test images: {} %'.format(test_size, accuracy))
 
         final_test_mean_loss = running_loss / test_size
-        print('Final Test Mean Loss Error: {:.4f}'.format(self.num_epochs, final_test_mean_loss))
+        print('Final Test Mean Loss Error: {:.4f}'.format(final_test_mean_loss))
 
         # Plot the Error graph
         plt.xlabel('Epoch')
         plt.ylabel('Dataset Error')
-        plt.title('Task 1: Train and test error graphs')
+        plt.title(f'{self.task_name}: Train and test error graphs')
         plt.plot(train_error, label='Train Error')
         plt.plot(test_error, label='Test Error')
         plt.legend()
@@ -186,11 +228,10 @@ class Trainer:
         return final_test_mean_loss
 
 
-def task1(manual_seed=0):
-    torch.manual_seed(manual_seed)
-
+def task1():
     # Hyperparameters
     hyperparameters = {
+        "seed": 0,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -199,41 +240,30 @@ def task1(manual_seed=0):
         "learning_rate": 0.001
     }
 
-    # MNIST dataset
-    train_dataset = torchvision.datasets.MNIST(root='./data/',
-                                               train=True,
-                                               transform=transforms.ToTensor(),
-                                               download=True)
-
-    test_dataset = torchvision.datasets.MNIST(root='./data/',
-                                              train=False,
-                                              transform=transforms.ToTensor())
-
-    # Data loader
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=hyperparameters["batch_size"],
-                                               shuffle=True)
-
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=hyperparameters["batch_size"],
-                                              shuffle=False)
-
-    dataloaders = {
-        "train": train_loader,
-        "test": test_loader
-    }
-
-    # Model
-    trainer = Trainer(hyperparameters=hyperparameters, dataloaders=dataloaders)
+    # Train model
+    trainer = Trainer(hyperparameters=hyperparameters, task_name="Task 1")
     final_test_mean_loss = trainer.train_model()
     return final_test_mean_loss
 
 
 def task2():
-    manual_seed_list = random.sample(population=range(0, 100), k=5)
+    # Hyperparameters
+    hyperparameters = {
+        "seed": 0,
+        "input_size": 784,
+        "hidden_size": 500,
+        "num_classes": 10,
+        "num_epochs": 5,
+        "batch_size": 100,
+        "learning_rate": 0.001
+    }
+
+    seed_list = random.sample(population=range(0, 100), k=5)
     test_errors = list()
-    for manual_seed in manual_seed_list:
-        test_error = task1(manual_seed=manual_seed)
+    for seed in seed_list:
+        hyperparameters["seed"] = seed
+        trainer = Trainer(hyperparameters=hyperparameters, task_name="Task 2")
+        test_error = trainer.train_model()
         test_errors.append(test_error)
 
     mean_test_error = np.mean(test_errors)
