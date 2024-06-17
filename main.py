@@ -148,8 +148,8 @@ def task1():
         for jj in range(5):
             idx = 5 * ii + jj
             axs[ii, jj].imshow(misclassified_images[idx].squeeze())
-            title = 'Predicted: {}, True: {}'.format(misclassified_pred_labels[idx].item(),
-                                                     misclassified_true_labels[idx].item())
+            title = 'Pred: {}\nTrue: {}'.format(misclassified_pred_labels[idx].item(),
+                                                misclassified_true_labels[idx].item())
             axs[ii, jj].set_title(title)
             axs[ii, jj].axis('off')
     plt.show()
