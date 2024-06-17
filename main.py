@@ -4,9 +4,9 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import random
 from sklearn.model_selection import train_test_split
 from sklearn.manifold import TSNE
-import random
 
 
 # Fully connected neural network
@@ -24,6 +24,30 @@ class NeuralNet(nn.Module):
         return out
 
 
+# class Trainer:
+#     def __init__(self, hyperparameters, dataloaders):
+#         # Hyperparameters parse
+#         self.hyperparameters = hyperparameters
+#         self.model = NeuralNet(
+#             hyperparameters['input_size'],
+#             hyperparameters['hidden_size'],
+#             hyperparameters['num_classes']
+#         ).to(device)
+#         self.criterion = nn.CrossEntropyLoss()
+#         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=hyperparameters['learning_rate'])
+#         self.num_epochs = hyperparameters['num_epochs']
+#         self.batch_size = hyperparameters['batch_size']
+#
+#         # Dataloaders parse
+#         self.dataloaders = dataloaders
+#         self.train_loader = dataloaders.get('train')
+#         self.valid_loader = dataloaders.get('valid')
+#         self.test_loader = dataloaders.get('test')
+#
+#     def train_model(self):
+#         pass
+
+
 def task1(manual_seed=0):
     torch.manual_seed(manual_seed)
 
@@ -31,7 +55,7 @@ def task1(manual_seed=0):
     input_size = 784
     hidden_size = 500
     num_classes = 10
-    num_epochs = 1
+    num_epochs = 5
     batch_size = 100
     learning_rate = 0.001
 
@@ -186,6 +210,10 @@ def task2():
         'Standard Deviation of Test Error: {:.4f}'
         .format(mean_test_error, std_test_error)
     )
+
+
+def task3():
+    pass
 
 
 if __name__ == '__main__':
