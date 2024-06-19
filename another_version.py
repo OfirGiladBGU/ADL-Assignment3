@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import random
 from torch.utils.data import Subset
 from sklearn.manifold import TSNE
+from sklearn.model_selection import ParameterGrid
 from torch.utils.data import random_split
 import pandas as pd
 
@@ -104,9 +105,9 @@ def train_validate_test( hyperparameters_list, task_name, valid_size=0, shrinkBy
 
               total_train_loss += loss.item()
 
-              if (i+1) % 100 == 0:
-                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
-                  .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
+             
+            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
+              .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
                 
             
             test_loss, _ = calculate_error(test_loader, model, "test",criterion) # calculate test error every epoch
@@ -159,7 +160,7 @@ def train_validate_test( hyperparameters_list, task_name, valid_size=0, shrinkBy
                 features.append(data.numpy())  # Convert the tensor to a NumPy array and append
                 labels.append(label)
             features = np.stack(features, axis=0)
-            features = features.reshape(1000, 28*28)
+            features = features.reshape(len(train_dataset), 28*28)
             #print(all_hidden.shape)
             tsne = TSNE(n_components=2, random_state=42)  # Set random_state for reproducibility
             embeddings = tsne.fit_transform(features)
@@ -378,54 +379,21 @@ def Task4():
     valid_size = 1000
     shrinkDatasetByFactor = 10
 
-    # Hyperparameters
-    hyperparameters = [{
-        "seed": 0,
-        "input_size": 784,
-        "hidden_size": 500,
-        "num_classes": 10,
-        "num_epochs": 5,
-        "batch_size": 100,
-        "learning_rate": 0.001
-    },
-                       {
-        "seed": 20,
-        "input_size": 784,
-        "hidden_size": 200,
-        "num_classes": 10,
-        "num_epochs": 5,
-        "batch_size": 200,
-        "learning_rate": 0.001
-    },
-                       {
-        "seed": 40,
-        "input_size": 784,
-        "hidden_size": 700,
-        "num_classes": 10,
-        "num_epochs": 5,
-        "batch_size": 10,
-        "learning_rate": 0.0001
-    },
-                       {
-        "seed": 60,
-        "input_size": 784,
-        "hidden_size": 134,
-        "num_classes": 10,
-        "num_epochs": 5,
-        "batch_size": 1000,
-        "learning_rate": 0.005
-    },
-                       {
-        "seed": 80,
-        "input_size": 784,
-        "hidden_size": 300,
-        "num_classes": 10,
-        "num_epochs": 5,
-        "batch_size": 200,
-        "learning_rate": 0.1
-    }]
+    #grid search over all combinations
+    param_grid = {
+         "seed": [0],
+        "input_size": [784],
+        "hidden_size": [100,500,800],
+        "num_classes": [10],
+        "num_epochs": [5],
+        "batch_size": [10, 100, 500],
+        "learning_rate": [0.01, 0.001]
+        
+    }
 
-    answers = train_validate_test(hyperparameters, task_name, valid_size, shrinkDatasetByFactor)
+    grid = ParameterGrid(param_grid)
+
+    answers = train_validate_test(grid, task_name, valid_size, shrinkDatasetByFactor)
     df = pd.DataFrame(answers['test_and_validation_errors_table'])
     display(df)
 
