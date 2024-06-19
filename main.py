@@ -54,6 +54,7 @@ class Trainer:
         self._prepare_dataloaders()
 
     def _prepare_dataloaders(self):
+        np.random.seed(self.seed)
         torch.manual_seed(self.seed)
 
         # MNIST dataset
@@ -72,9 +73,6 @@ class Trainer:
                                                             batch_size=self.batch_size,
                                                             shuffle=True)
 
-            self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                                           batch_size=self.batch_size,
-                                                           shuffle=False)
         else:
             train_dataset, valid_dataset = torch.utils.data.random_split(
                 train_dataset,
@@ -89,9 +87,9 @@ class Trainer:
                                                             batch_size=self.batch_size,
                                                             shuffle=True)
 
-            self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                                           batch_size=self.batch_size,
-                                                           shuffle=False)
+        self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                                       batch_size=self.batch_size,
+                                                       shuffle=False)
 
     def train_model(self):
         train_size = len(self.train_loader.dataset)
