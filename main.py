@@ -426,11 +426,18 @@ def task4():
         test_error, valid_error = trainer.train_model()
 
         # Add results to report data
+        hyperparameters.pop("seed")
+        hyperparameters.pop("train_size")
+        hyperparameters.pop("valid_size")
+        hyperparameters.pop("test_size")
         hyperparameters["test_error"] = test_error
         hyperparameters["valid_error"] = valid_error
         report_data.append(hyperparameters)
 
     df = pd.DataFrame.from_records(report_data)
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 150)
     print(df)
 
 
