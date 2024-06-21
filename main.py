@@ -4,7 +4,6 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
-import random
 from sklearn.manifold import TSNE
 from sklearn.model_selection import ParameterGrid
 import pandas as pd
@@ -24,11 +23,18 @@ class NeuralNet(nn.Module):
         out = self.fc2(out)
         return out
 
+    def apply_first_layer(self, x):
+        out = self.fc1(x)
+        out = self.relu(out)
+        return out
+
 
 class Trainer:
-    def __init__(self, hyperparameters, task_name, valid_size=0):
+    def __init__(self, hyperparameters: dict, task_name: str):
         # Hyperparameters parse
         self.seed = hyperparameters['seed']
+        self.train_size = hyperparameters["train_size"]
+        self.valid_size = hyperparameters["valid_size"]
         self.input_size = hyperparameters['input_size']
         self.hidden_size = hyperparameters['hidden_size']
         self.num_classes = hyperparameters['num_classes']
@@ -38,7 +44,6 @@ class Trainer:
 
         # Auxiliaries parse
         self.task_name = task_name
-        self.valid_size = valid_size
         if self.valid_size > 0:
             self.valid_mode_active = True
         else:
@@ -65,6 +70,7 @@ class Trainer:
                                                    train=True,
                                                    transform=transforms.ToTensor(),
                                                    download=True)
+        train_dataset = torch.utils.data.Subset(train_dataset, indices=range(self.train_size))
 
         test_dataset = torchvision.datasets.MNIST(root='./data/',
                                                   train=False,
@@ -79,7 +85,7 @@ class Trainer:
         else:
             train_dataset, valid_dataset = torch.utils.data.random_split(
                 train_dataset,
-                [len(test_dataset) - self.valid_size, self.valid_size]
+                [self.train_size - self.valid_size, self.valid_size]
             )
 
             self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
@@ -251,6 +257,47 @@ class Trainer:
         else:
             return final_test_mean_loss, min_valid_mean_loss
 
+    def features_analysis(self):
+        all_hidden_features = torch.Tensor()
+        all_original_images = torch.Tensor()
+        all_labels = torch.Tensor()
+
+        for images, labels in self.train_loader:
+            original_images = images
+            images = images.reshape(-1, self.input_size).to(device)
+            labels = labels.to(device)
+            hidden_features = self.model.apply_first_layer(images)
+
+            all_hidden_features = torch.cat((all_hidden_features, hidden_features.detach()))
+            all_original_images = torch.cat((all_original_images, original_images))
+            all_labels = torch.cat((all_labels, labels))
+
+        all_hidden_features = all_hidden_features.numpy()
+        all_original_images = all_original_images.numpy()
+        all_labels = all_labels.numpy()
+
+        tsne = TSNE(n_components=2, random_state=42)  # Set random_state for reproducibility
+
+        # Embeddings of Z_i
+        embeddings_2d = tsne.fit_transform(all_hidden_features)
+        plt.figure()
+        plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
+        plt.colorbar(label='Label')
+        plt.title('2D Embedding of Z_i')
+        plt.xlabel('t-SNE Dimension 1')
+        plt.ylabel('t-SNE Dimension 2')
+        plt.show()
+
+        # Embeddings of X_i
+        embeddings_2d = tsne.fit_transform(all_original_images)
+        plt.figure()
+        plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
+        plt.colorbar(label='Label')
+        plt.title('2D Embedding of X_i')
+        plt.xlabel('t-SNE Dimension 1')
+        plt.ylabel('t-SNE Dimension 2')
+        plt.show()
+
 
 def task1():
     task_name = "Task 1"
@@ -258,6 +305,8 @@ def task1():
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
+        "train_size": 60000,
+        "valid_size": 0,  # Set to 0 to disable validation mode
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -278,6 +327,8 @@ def task2():
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
+        "train_size": 60000,
+        "valid_size": 0,  # Set to 0 to disable validation mode
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -305,11 +356,12 @@ def task2():
 
 def task3():
     task_name = "Task 3"
-    valid_size = 10000
 
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
+        "train_size": 60000,
+        "valid_size": 10000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -323,7 +375,7 @@ def task3():
     valid_errors = list()
     for seed in seed_list:
         hyperparameters["seed"] = seed
-        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name, valid_size=valid_size)
+        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name)
         test_error, valid_error = trainer.train_model()
         test_errors.append(test_error)
         valid_errors.append(valid_error)
@@ -347,11 +399,12 @@ def task3():
 
 def task4():
     task_name = "Task 4"
-    valid_size = 10000
 
     # GridSearch Hyperparameters
     grid_parameters = {
         "seed": [0],
+        "train_size": [60000],
+        "valid_size": [10000],
         "input_size": [784],
         "hidden_size": [100, 500, 800],
         "num_classes": [10],
@@ -363,7 +416,7 @@ def task4():
 
     report_data = list()
     for hyperparameters in grid_search_hyperparameters:
-        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name, valid_size=valid_size)
+        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name)
         test_error, valid_error = trainer.train_model()
 
         # Add results to report data
@@ -377,12 +430,34 @@ def task4():
 
 def task5():
     task_name = "Task 5"
-    valid_size = 10000
+
+    # Hyperparameters
+    hyperparameters = {
+        "seed": 0,
+        "train_size": 60000,
+        "valid_size": 10000,
+        "input_size": 784,
+        "hidden_size": 500,
+        "num_classes": 10,
+        "num_epochs": 5,
+        "batch_size": 100,
+        "learning_rate": 0.001
+    }
+
+    # Train model
+    trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name)
+    trainer.train_model()
+
+    # Features analysis
+    trainer.features_analysis()
+
 
 if __name__ == '__main__':
     # Setup device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     task1()
-    # task2()
-    # task3()
+    task2()
+    task3()
+    task4()
+    task5()
