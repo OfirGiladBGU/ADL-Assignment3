@@ -45,6 +45,8 @@ class Trainer:
         # Auxiliaries parse
         self.task_name = task_name
         if self.valid_size > 0:
+            if self.train_size < self.valid_size:
+                raise ValueError('Valid size must be less than train size')
             self.valid_mode_active = True
         else:
             self.valid_mode_active = False
@@ -212,7 +214,9 @@ class Trainer:
                 correct += (predicted == labels).sum().item()
 
                 # Misclassified images
-                misclassified_indices = np.nonzero(predicted != labels)
+                labels = labels.cpu()
+                predicted = predicted.cpu()
+                misclassified_indices = torch.nonzero(predicted != labels)
                 misclassified_images = torch.cat((misclassified_images, original_images[misclassified_indices]))
                 misclassified_pred_labels = torch.cat((misclassified_pred_labels, predicted[misclassified_indices]))
                 misclassified_true_labels = torch.cat((misclassified_true_labels, labels[misclassified_indices]))
@@ -272,8 +276,8 @@ class Trainer:
             all_original_images = torch.cat((all_original_images, original_images))
             all_labels = torch.cat((all_labels, labels))
 
-        all_hidden_features = all_hidden_features.numpy()
-        all_original_images = all_original_images.numpy()
+        all_hidden_features = all_hidden_features.cpu().numpy()
+        all_original_images = all_original_images.cpu().numpy()
         all_labels = all_labels.numpy()
 
         tsne = TSNE(n_components=2, random_state=42)  # Set random_state for reproducibility
