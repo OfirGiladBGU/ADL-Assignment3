@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import random
 from sklearn.manifold import TSNE
+from sklearn.model_selection import ParameterGrid
 
 
 # Fully connected neural network
@@ -41,6 +42,7 @@ class Trainer:
             self.valid_mode_active = True
         else:
             self.valid_mode_active = False
+        self.model_weights_filename = f'{self.task_name}_{self.seed}_model.pth'
 
         # Model
         self.model = NeuralNet(self.input_size, self.hidden_size, self.num_classes).to(device)
@@ -98,9 +100,11 @@ class Trainer:
 
         if self.valid_mode_active:
             valid_size = len(self.valid_loader.dataset)
+            min_valid_mean_loss = np.inf
             modes = ['train', 'valid', 'test']
         else:
             valid_size = 0
+            min_valid_mean_loss = 0
             modes = ['train', 'test']
 
         train_error = list()
@@ -151,6 +155,12 @@ class Trainer:
                     valid_error.append(mean_loss)
                     print('[Valid]: Epoch [{}/{}], Mean Loss Error: {:.4f}'
                           .format(epoch + 1, self.num_epochs, mean_loss))
+
+                    # Save model with minimum validation error
+                    if min_valid_mean_loss > mean_loss:
+                        min_valid_mean_loss = mean_loss
+                        torch.save(self.model.state_dict(), self.model_weights_filename)
+
                 # Evaluate mode
                 else:
                     self.model.eval()
@@ -167,6 +177,10 @@ class Trainer:
                     test_error.append(mean_loss)
                     print('[Test]: Epoch [{}/{}], Mean Loss Error: {:.4f}'
                           .format(epoch + 1, self.num_epochs, mean_loss))
+
+        # Load model with minimum validation error
+        if self.valid_mode_active:
+            self.model.load_state_dict(torch.load(self.model_weights_filename))
 
         # Test error after training
         running_loss = 0.0
@@ -203,10 +217,7 @@ class Trainer:
         print('Final Test Mean Loss Error: {:.4f}'.format(final_test_mean_loss))
 
         if self.valid_mode_active:
-            min_valid_mean_loss = min(valid_error)
             print('Minimum Valid Mean Loss Error: {:.4f}'.format(min_valid_mean_loss))
-        else:
-            min_valid_mean_loss = None
 
         # Plot the Error graph
         plt.xlabel('Epoch')
@@ -274,7 +285,7 @@ def task2():
         "learning_rate": 0.001
     }
 
-    seed_list = random.sample(population=range(0, 100), k=5)
+    seed_list = [0, 20, 40, 60, 80]
     test_errors = list()
     for seed in seed_list:
         hyperparameters["seed"] = seed
@@ -306,7 +317,7 @@ def task3():
         "learning_rate": 0.001
     }
 
-    seed_list = random.sample(population=range(0, 100), k=5)
+    seed_list = [0, 20, 40, 60, 80]
     test_errors = list()
     valid_errors = list()
     for seed in seed_list:
