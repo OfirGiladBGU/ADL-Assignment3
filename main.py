@@ -264,23 +264,26 @@ class Trainer:
         all_original_images = torch.Tensor()
         all_labels = torch.Tensor()
 
-        for images, labels in self.train_loader:
-            original_images = images
-            images = images.reshape(-1, self.input_size).to(device)
-            labels = labels.to(device)
-            hidden_features = self.model.apply_first_layer(images)
+        self.model.eval()
+        with torch.no_grad():
+            for images, labels in self.train_loader:
+                original_images = images
+                images = images.reshape(-1, self.input_size).to(device)
+                hidden_features = self.model.apply_first_layer(images)
 
-            all_hidden_features = torch.cat((all_hidden_features, hidden_features.detach()))
-            all_original_images = torch.cat((all_original_images, original_images))
-            all_labels = torch.cat((all_labels, labels))
+                hidden_features = hidden_features.detach().cpu()
+                all_hidden_features = torch.cat((all_hidden_features, hidden_features))
+                all_original_images = torch.cat((all_original_images, original_images))
+                all_labels = torch.cat((all_labels, labels))
 
-        all_hidden_features = all_hidden_features.cpu().numpy()
-        all_original_images = all_original_images.cpu().numpy()
+        all_hidden_features = all_hidden_features.numpy()
+        all_original_images = all_original_images.numpy()
         all_labels = all_labels.numpy()
 
         tsne = TSNE(n_components=2, random_state=42)  # Set random_state for reproducibility
 
         # Embeddings of Z_i
+        print('Creating t-SNE plot of Z_i...')
         embeddings_2d = tsne.fit_transform(all_hidden_features)
         plt.figure()
         plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
@@ -291,6 +294,7 @@ class Trainer:
         plt.show()
 
         # Embeddings of X_i
+        print('Creating t-SNE plot of X_i...')
         embeddings_2d = tsne.fit_transform(all_original_images)
         plt.figure()
         plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
