@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import random
 from sklearn.manifold import TSNE
 from sklearn.model_selection import ParameterGrid
+import pandas as pd
 
 
 # Fully connected neural network
@@ -343,6 +344,40 @@ def task3():
         .format(mean_valid_error, std_valid_error)
     )
 
+
+def task4():
+    task_name = "Task 4"
+    valid_size = 10000
+
+    # GridSearch Hyperparameters
+    grid_parameters = {
+        "seed": [0],
+        "input_size": [784],
+        "hidden_size": [100, 500, 800],
+        "num_classes": [10],
+        "num_epochs": [5],
+        "batch_size": [10, 100, 500],
+        "learning_rate": [0.01, 0.001, 0.0001]
+    }
+    grid_search_hyperparameters = list(ParameterGrid(grid_parameters))
+
+    report_data = list()
+    for hyperparameters in grid_search_hyperparameters:
+        trainer = Trainer(hyperparameters=hyperparameters, task_name=task_name, valid_size=valid_size)
+        test_error, valid_error = trainer.train_model()
+
+        # Add results to report data
+        hyperparameters["test_error"] = test_error
+        hyperparameters["valid_error"] = valid_error
+        report_data.append(hyperparameters)
+
+    df = pd.DataFrame.from_records(report_data)
+    print(df)
+
+
+def task5():
+    task_name = "Task 5"
+    valid_size = 10000
 
 if __name__ == '__main__':
     # Setup device
