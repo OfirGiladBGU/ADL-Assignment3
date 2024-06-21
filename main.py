@@ -35,6 +35,8 @@ class Trainer:
         self.seed = hyperparameters['seed']
         self.train_size = hyperparameters["train_size"]
         self.valid_size = hyperparameters["valid_size"]
+        self.test_size = hyperparameters["test_size"]
+
         self.input_size = hyperparameters['input_size']
         self.hidden_size = hyperparameters['hidden_size']
         self.num_classes = hyperparameters['num_classes']
@@ -77,6 +79,7 @@ class Trainer:
         test_dataset = torchvision.datasets.MNIST(root='./data/',
                                                   train=False,
                                                   transform=transforms.ToTensor())
+        test_dataset = torch.utils.data.Subset(test_dataset, indices=range(self.test_size))
 
         # Data loader
         if self.valid_size == 0:
@@ -103,23 +106,18 @@ class Trainer:
                                                        shuffle=False)
 
     def train_model(self):
-        train_size = len(self.train_loader.dataset)
-        test_size = len(self.test_loader.dataset)
-        total_step = len(self.train_loader)
-
+        # Set available modes
         if self.valid_mode_active:
-            valid_size = len(self.valid_loader.dataset)
-            min_valid_mean_loss = np.inf
             modes = ['train', 'valid', 'test']
         else:
-            valid_size = 0
-            min_valid_mean_loss = 0
             modes = ['train', 'test']
 
+        # Train the model
+        total_step = len(self.train_loader)
+        min_valid_mean_loss = np.inf
         train_error = list()
         valid_error = list()
         test_error = list()
-
         for epoch in range(self.num_epochs):
             for mode in modes:
                 running_loss = 0.0
@@ -143,7 +141,7 @@ class Trainer:
                             print('[Train]: Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
                                   .format(epoch + 1, self.num_epochs, i + 1, total_step, loss.item()))
 
-                    mean_loss = running_loss / train_size
+                    mean_loss = running_loss / self.train_size
                     train_error.append(mean_loss)
                     print('[Train]: Epoch [{}/{}], Mean Loss Error: {:.4f}'
                           .format(epoch + 1, self.num_epochs, mean_loss))
@@ -160,7 +158,7 @@ class Trainer:
                             loss = self.criterion(outputs, labels)
                             running_loss += loss.item()
 
-                    mean_loss = running_loss / valid_size
+                    mean_loss = running_loss / self.valid_size
                     valid_error.append(mean_loss)
                     print('[Valid]: Epoch [{}/{}], Mean Loss Error: {:.4f}'
                           .format(epoch + 1, self.num_epochs, mean_loss))
@@ -182,7 +180,7 @@ class Trainer:
                             loss = self.criterion(outputs, labels)
                             running_loss += loss.item()
 
-                    mean_loss = running_loss / test_size
+                    mean_loss = running_loss / self.test_size
                     test_error.append(mean_loss)
                     print('[Test]: Epoch [{}/{}], Mean Loss Error: {:.4f}'
                           .format(epoch + 1, self.num_epochs, mean_loss))
@@ -222,9 +220,9 @@ class Trainer:
                 misclassified_true_labels = torch.cat((misclassified_true_labels, labels[misclassified_indices]))
 
             accuracy = 100 * correct / total
-            print('Accuracy of the network on the {} test images: {} %'.format(test_size, accuracy))
+            print('Accuracy of the network on the {} test images: {} %'.format(self.test_size, accuracy))
 
-        final_test_mean_loss = running_loss / test_size
+        final_test_mean_loss = running_loss / self.test_size
         print('Final Test Mean Loss Error: {:.4f}'.format(final_test_mean_loss))
 
         if self.valid_mode_active:
@@ -311,6 +309,7 @@ def task1():
         "seed": 0,
         "train_size": 60000,
         "valid_size": 0,  # Set to 0 to disable validation mode
+        "test_size": 10000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -333,6 +332,7 @@ def task2():
         "seed": 0,
         "train_size": 60000,
         "valid_size": 0,  # Set to 0 to disable validation mode
+        "test_size": 10000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -366,6 +366,7 @@ def task3():
         "seed": 0,
         "train_size": 60000,
         "valid_size": 10000,
+        "test_size": 10000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -409,6 +410,7 @@ def task4():
         "seed": [0],
         "train_size": [60000],
         "valid_size": [10000],
+        "test_size": [10000],
         "input_size": [784],
         "hidden_size": [100, 500, 800],
         "num_classes": [10],
@@ -440,6 +442,7 @@ def task5():
         "seed": 0,
         "train_size": 60000,
         "valid_size": 10000,
+        "test_size": 10000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
