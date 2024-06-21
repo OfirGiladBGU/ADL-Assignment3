@@ -244,7 +244,7 @@ class Trainer:
         for ii in range(2):
             for jj in range(5):
                 idx = 5 * ii + jj
-                axs[ii, jj].imshow(misclassified_images[idx].squeeze())
+                axs[ii, jj].imshow(misclassified_images[idx].squeeze(), cmap='gray')
                 title = (
                     'Pred: {}\n'
                     'True: {}'
@@ -267,13 +267,13 @@ class Trainer:
         self.model.eval()
         with torch.no_grad():
             for images, labels in self.train_loader:
-                original_images = images
                 images = images.reshape(-1, self.input_size).to(device)
                 hidden_features = self.model.apply_first_layer(images)
 
+                images = images.cpu()
                 hidden_features = hidden_features.detach().cpu()
                 all_hidden_features = torch.cat((all_hidden_features, hidden_features))
-                all_original_images = torch.cat((all_original_images, original_images))
+                all_original_images = torch.cat((all_original_images, images))
                 all_labels = torch.cat((all_labels, labels))
 
         all_hidden_features = all_hidden_features.numpy()
@@ -282,24 +282,24 @@ class Trainer:
 
         tsne = TSNE(n_components=2, random_state=42)  # Set random_state for reproducibility
 
-        # Embeddings of Z_i
-        print('Creating t-SNE plot of Z_i...')
+        # Embeddings of Z
+        print('Creating t-SNE plot of Z vectors...')
         embeddings_2d = tsne.fit_transform(all_hidden_features)
         plt.figure()
         plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
         plt.colorbar(label='Label')
-        plt.title('2D Embedding of Z_i')
+        plt.title('2D Embedding of Z')
         plt.xlabel('t-SNE Dimension 1')
         plt.ylabel('t-SNE Dimension 2')
         plt.show()
 
-        # Embeddings of X_i
-        print('Creating t-SNE plot of X_i...')
+        # Embeddings of X
+        print('Creating t-SNE plot of X...')
         embeddings_2d = tsne.fit_transform(all_original_images)
         plt.figure()
         plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
         plt.colorbar(label='Label')
-        plt.title('2D Embedding of X_i')
+        plt.title('2D Embedding of X')
         plt.xlabel('t-SNE Dimension 1')
         plt.ylabel('t-SNE Dimension 2')
         plt.show()
@@ -451,9 +451,9 @@ def task5():
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
-        "train_size": 60000,
-        "valid_size": 10000,
-        "test_size": 10000,
+        "train_size": 6000,
+        "valid_size": 1000,
+        "test_size": 1000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -474,8 +474,8 @@ if __name__ == '__main__':
     # Setup device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    task1()
-    task2()
-    task3()
-    task4()
+    # task1()
+    # task2()
+    # task3()
+    # task4()
     task5()
