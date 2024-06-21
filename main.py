@@ -52,7 +52,6 @@ class Trainer:
             self.valid_mode_active = True
         else:
             self.valid_mode_active = False
-        self.model_weights_filename = '{}_{}_model.pth'.format(self.task_name, self.seed)
 
         # Model
         self.model = NeuralNet(self.input_size, self.hidden_size, self.num_classes).to(device)
@@ -113,6 +112,7 @@ class Trainer:
             modes = ['train', 'test']
 
         # Train the model
+        best_model_weights = self.model.state_dict()
         total_step = len(self.train_loader)
         min_valid_mean_loss = np.inf
         train_error = list()
@@ -166,7 +166,7 @@ class Trainer:
                     # Save model with minimum validation error
                     if min_valid_mean_loss > mean_loss:
                         min_valid_mean_loss = mean_loss
-                        torch.save(self.model.state_dict(), self.model_weights_filename)
+                        best_model_weights = self.model.state_dict()
 
                 # Evaluate mode
                 else:
@@ -187,7 +187,7 @@ class Trainer:
 
         # Load model with minimum validation error
         if self.valid_mode_active:
-            self.model.load_state_dict(torch.load(self.model_weights_filename))
+            self.model.load_state_dict(best_model_weights)
 
         # Test error after training
         running_loss = 0.0
