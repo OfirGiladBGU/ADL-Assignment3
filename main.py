@@ -52,7 +52,7 @@ class Trainer:
             self.valid_mode_active = True
         else:
             self.valid_mode_active = False
-        self.model_weights_filename = f'{self.task_name}_{self.seed}_model.pth'
+        self.model_weights_filename = '{}_{}_model.pth'.format(self.task_name, self.seed)
 
         # Model
         self.model = NeuralNet(self.input_size, self.hidden_size, self.num_classes).to(device)
@@ -415,8 +415,8 @@ def task4():
         "hidden_size": [100, 500, 800],
         "num_classes": [10],
         "num_epochs": [5],
-        "batch_size": [10, 100, 500],
-        "learning_rate": [0.01, 0.001, 0.0001]
+        "batch_size": [10, 100, 250],
+        "learning_rate": [0.01, 0.001]
     }
     grid_search_hyperparameters = list(ParameterGrid(grid_parameters))
 
