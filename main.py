@@ -288,18 +288,18 @@ class Trainer:
         plt.figure()
         plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
         plt.colorbar(label='Label')
-        plt.title('2D Embedding of Z')
+        plt.title('2D embedding of Z vectors')
         plt.xlabel('t-SNE Dimension 1')
         plt.ylabel('t-SNE Dimension 2')
         plt.show()
 
         # Embeddings of X
-        print('Creating t-SNE plot of X...')
+        print('Creating t-SNE plot of X vectors...')
         embeddings_2d = tsne.fit_transform(all_original_images)
         plt.figure()
         plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels, cmap='tab10')
         plt.colorbar(label='Label')
-        plt.title('2D Embedding of X')
+        plt.title('2D embedding of X vectors')
         plt.xlabel('t-SNE Dimension 1')
         plt.ylabel('t-SNE Dimension 2')
         plt.show()
@@ -451,9 +451,9 @@ def task5():
     # Hyperparameters
     hyperparameters = {
         "seed": 0,
-        "train_size": 6000,
-        "valid_size": 1000,
-        "test_size": 1000,
+        "train_size": 60000,
+        "valid_size": 10000,
+        "test_size": 10000,
         "input_size": 784,
         "hidden_size": 500,
         "num_classes": 10,
@@ -474,8 +474,8 @@ if __name__ == '__main__':
     # Setup device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # task1()
-    # task2()
-    # task3()
-    # task4()
+    task1()
+    task2()
+    task3()
+    task4()
     task5()
